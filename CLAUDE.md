@@ -1,0 +1,37 @@
+# CLAUDE.md — Claude Code 项目指引
+
+> 本项目完整规范见 **AGENTS.md**（Claude Code / Codex / AtomCode / WorkBuddy 通用），本文件为 Claude Code 特定摘要与入口。
+
+## 项目速览
+
+**UniMarket 统一商城前台**：C 端电商营销平台（支付/抽奖/拼团/积分/券/购物车/下单/履约）。Java 8 + Spring Boot 2.7.x，DDD 六边形架构，Maven 多模块。当前 Phase 1（登录→下单→支付）。
+
+## 工作前必读
+
+| 场景 | 文档 |
+|------|------|
+| 需求 | `docs/01-需求/需求文档-SRS-统一商城前台.md` |
+| 设计 | `docs/02-设计/设计文档-SDS-统一商城前台.md` |
+| 编码/注释/接口/DB | `docs/04-开发规范/` 下对应规范 |
+| 测试 | `docs/05-测试/测试规范-测试计划与用例.md` |
+
+## Claude Code 硬性要求
+
+1. **先读文档再改代码**，不凭记忆修改本仓库内容。
+2. **金额 BigDecimal、时间 java.time、SQL 一律 `#{}`、幂等有唯一约束**。
+3. **DDD 分层**：领域逻辑只在 domain 层，Controller 不写业务逻辑。
+4. **提交规范**：Conventional Commits（`feat/fix/docs/...`），一个提交只做一件事。
+5. **验证**：改完运行 `mvn compile` / `mvn test`，通过再交付；未运行必须说明。
+6. **不隐藏问题**：编译失败/测试失败修根因，禁止注释掉测试掩盖。
+7. **安全红线**：密钥/密码/Token 不写入代码、注释、日志、提交。
+8. 提交信息需附带 `Co-Authored-By: AtomCode (deepseek-v4-flash) <noreply@atomgit.com>`（amend/revert 除外）。
+
+## 常用命令
+
+```bash
+mvn clean compile                 # 编译
+mvn test                          # 测试
+docker compose -f docs/docker/docker-compose-infrastructure.yml up -d  # 中间件
+```
+
+*CLAUDE.md v1.0 — 2026-08-10，完整规范见 AGENTS.md*
