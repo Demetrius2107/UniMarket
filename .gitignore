@@ -40,6 +40,7 @@ target/
 .idea/shelf/
 .idea/caches/
 .idea/encodings.xml
+.idea/vcs.xml
 
 # AI 开发工具本地配置（AGENTS.md / CLAUDE.md / .atomcode.md 全局指令文档仍需提交）
 .claude/
