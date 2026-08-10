@@ -217,22 +217,28 @@ uni-market/
 
 ## 5. 技术栈
 
+> 2026-08 技术选型升级（见 ADR-10）：由原 Java 8 + Boot 2.7 栈升级为 JDK 21 + Boot 3 栈。
+
 | 层面 | 技术 | 用途 |
 |------|------|------|
-| 基础框架 | Spring Boot 2.7.x | 应用框架 |
-| JDK | Java 8+ | 开发语言 |
-| ORM | MyBatis-Spring-Boot 2.1.x | 数据访问 |
-| 数据库 | MySQL 8.0 | 主存储 |
-| 缓存 | Redis + Redisson | 缓存、分布式锁、库存扣减 |
-| 消息队列 | RabbitMQ | 异步解耦 |
-| RPC | Apache Dubbo 3.x | 服务间调用（预留边界） |
-| 注册/配置 | Nacos | 服务发现 & 配置管理 |
+| 基础框架 | Spring Boot 3.4.x（JDK 21，jakarta 命名空间） | 应用框架 |
+| JDK | JDK 21（LTS） | 开发语言 |
+| 构建 | Maven 3.9.x | 构建管理 |
+| ORM | MyBatis-Plus 3.5.5+（`mybatis-plus-spring-boot3-starter`，内嵌 MyBatis） | 数据访问 |
+| 数据库 | MySQL 8.4 LTS | 主存储（Phase 10 前单库，后期再分库分表） |
+| 缓存 | Redis 7.2 + Redisson 3.27+ | 缓存、分布式锁、库存扣减 |
+| 对象存储 | MinIO | 文件/图片存储（商品图、售后凭证） |
+| 消息队列 | RocketMQ 5.x（业务线） + Kafka 3.7+（日志/埋点线） | 异步解耦（双 MQ） |
+| RPC | Apache Dubbo 3.2+ | 服务间调用（预留边界） |
+| 注册/配置 | Nacos | 服务发现 & 配置管理 & DCC 动态配置 |
 | 搜索引擎 | Elasticsearch + Canal | 商品搜索 |
 | 定时任务 | XXL-Job | 分布式任务调度 |
-| 限流熔断 | Guava RateLimiter + Sentinel | 流量控制 |
+| 限流熔断 | Sentinel（可辅以 Guava RateLimiter） | 流量控制（风控四级） |
+| 接口文档 | Knife4j 4.4+（OpenAPI3 + Swagger，jakarta 版） | API 文档与调试 |
 | 监控 | Prometheus + Grafana | 系统监控 |
+| 链路追踪 | Micrometer Tracing + Zipkin（可选 SkyWalking） | 可观测性 |
 | 日志 | ELK（Logstash + ES + Kibana） | 日志收集分析 |
-| 容器化 | Docker Compose | 环境部署 |
+| 容器化 | Docker Compose（开发/演示）→ K8s（生产） | 环境部署 |
 | 前端 | React / Vue SPA | 用户端（PRD 不限定） |
 
 ---
