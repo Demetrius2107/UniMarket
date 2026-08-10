@@ -4,7 +4,7 @@
 
 ## 项目速览
 
-**UniMarket 统一商城前台**：C 端电商营销平台（支付/抽奖/拼团/积分/券/购物车/下单/履约）。Java 8 + Spring Boot 2.7.x，DDD 六边形架构，Maven 多模块。当前 Phase 1（登录→下单→支付）。
+**UniMarket 统一商城前台**：C 端电商营销平台（支付/抽奖/拼团/积分/券/购物车/下单/履约）。JDK 21 + Spring Boot 3.4.x + MyBatis-Plus，DDD 六边形架构，Maven 多模块。当前 Phase 1（登录→下单→支付）。
 
 ## 工作前必读
 

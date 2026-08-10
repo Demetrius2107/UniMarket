@@ -10,7 +10,7 @@
 
 **UniMarket（统一商城前台）**：面向 C 端用户的完整电商营销平台，融合支付、抽奖、营销、拼团、购物车、下单、履约。定位是"可运营的营销引擎"——运营通过配置化活动（抽奖/拼团/积分/优惠券/签到返利）驱动增长与转化。
 
-- 单人多模块 DDD 项目，Java 8+ / Spring Boot 2.7.x
+- 单人多模块 DDD 项目，JDK 21 / Spring Boot 3.4.x / MyBatis-Plus
 - 四个原项目能力迁移：s-pay（登录/支付）、Lottery（抽奖）、big-market（积分/风控/监控）、group-buy-market（拼团/折扣）
 - 12 阶段 16 周实施路线图，当前处于 **Phase 1（基础骨架：登录→下单→支付）**
 
@@ -18,11 +18,12 @@
 
 | 层面 | 技术 |
 |------|------|
-| 框架 | Spring Boot 2.7.x / MyBatis / Java 8+ |
-| 存储 | MySQL 8.0（分库分表 2×4）/ Redis + Redisson |
-| 中间件 | RabbitMQ / Nacos / XXL-Job / Elasticsearch + Canal |
-| 风控监控 | Guava RateLimiter / Sentinel / Prometheus + Grafana / ELK |
-| 构建 | Maven 多模块 |
+| 框架 | Spring Boot 3.4.x（JDK 21，jakarta 命名空间）/ MyBatis-Plus 3.5.5+ |
+| 存储 | MySQL 8.4 LTS（Phase 10 前单库，后期再分库分表）/ Redis 7.2 + Redisson / MinIO |
+| 中间件 | RocketMQ 5.x（业务线）+ Kafka 3.7+（日志线）/ Nacos / XXL-Job / Elasticsearch + Canal |
+| 风控监控 | Sentinel / Prometheus + Grafana / Micrometer Tracing / ELK |
+| 接口文档 | Knife4j 4.4+（OpenAPI3 + Swagger） |
+| 构建 | Maven 3.9.x 多模块 |
 
 ## 3. 仓库结构
 
