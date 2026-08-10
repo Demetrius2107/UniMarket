@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>cn.unimarket</groupId>
+        <artifactId>uni-market</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>uni-market-infrastructure</artifactId>
+    <name>uni-market-infrastructure</name>
+    <description>基础设施层：DAO / PO / 仓储实现 / Redis / MQ / ES / 外部网关适配器（依赖倒置，实现 domain 仓储接口）</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>cn.unimarket</groupId>
+            <artifactId>uni-market-domain</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.unimarket</groupId>
+            <artifactId>uni-market-types</artifactId>
+        </dependency>
+
+        <!-- Phase 1 数据访问：MyBatis-Plus + MySQL -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Phase 1 缓存/分布式锁：Redis + Redisson -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson-spring-boot-starter</artifactId>
+        </dependency>
+
+        <!-- RocketMQ / Kafka / MinIO / ES 等按对应 Phase 再引入（版本已在父 POM 锁定） -->
+    </dependencies>
+</project>
