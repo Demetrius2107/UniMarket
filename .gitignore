@@ -29,11 +29,23 @@ replay_pid*
 target/
 *.iml
 
-# IDE 本地配置（保留 .idea/.gitignore 等共享规则，排除个人文件）
+# IDEA 本地配置（保留 .idea/.gitignore、misc.xml、inspectionProfiles 等共享规则，排除个人文件）
 .idea/workspace.xml
 .idea/dataSources/
 .idea/dataSources.local.xml
 .idea/httpRequests/
+.idea/modules.xml
+.idea/artifacts/
+.idea/libraries/
+.idea/shelf/
+.idea/caches/
+.idea/encodings.xml
+
+# AI 开发工具本地配置（AGENTS.md / CLAUDE.md / .atomcode.md 全局指令文档仍需提交）
+.claude/
+.codex/
+.atomcode/
+.workbuddy/
 
 # Node 依赖（如引入前端）
 node_modules/
@@ -46,4 +58,6 @@ node_modules/
 # 本地环境配置（密钥/账号不入库）
 *.local.properties
 application-local.yml
+.env
+.env.local
 
