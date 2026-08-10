@@ -22,3 +22,28 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+# ===== UniMarket 追加规则 =====
+
+# Maven 构建产物
+target/
+*.iml
+
+# IDE 本地配置（保留 .idea/.gitignore 等共享规则，排除个人文件）
+.idea/workspace.xml
+.idea/dataSources/
+.idea/dataSources.local.xml
+.idea/httpRequests/
+
+# Node 依赖（如引入前端）
+node_modules/
+
+# 日志与临时文件
+*.pid
+*.swp
+.DS_Store
+
+# 本地环境配置（密钥/账号不入库）
+*.local.properties
+application-local.yml
+
