@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- ============================================================
+         UniMarket 统一商城前台 — 父 POM（技术选型见 ADR-10）
+         JDK 21 / Spring Boot 3.4.x / MyBatis-Plus 3.5.5+
+         双 MQ：RocketMQ 5.x（业务线）+ Kafka 3.7+（日志线）
+         本 POM 只负责：版本锁定(dependencyManagement)、插件管理、模块聚合。
+         依赖按开发阶段在子模块中按需引入（Phase 1 最小集）。
+         ============================================================ -->
+    <groupId>cn.unimarket</groupId>
+    <artifactId>uni-market</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>uni-market</name>
+    <description>UniMarket 统一商城前台（DDD 六边形架构，模块化单体）</description>
+
+    <modules>
+        <module>uni-market-types</module>
+        <module>uni-market-api</module>
+        <module>uni-market-domain</module>
+        <module>uni-market-infrastructure</module>
+        <module>uni-market-trigger</module>
+        <module>uni-market-app</module>
+    </modules>
+
+    <properties>
+        <java.version>21</java.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- 核心框架（ADR-10 锁定） -->
+        <spring-boot.version>3.4.1</spring-boot.version>
+        <spring-cloud-alibaba.version>2023.0.3.4</spring-cloud-alibaba.version>
+
+        <!-- 数据访问 -->
+        <mybatis-plus.version>3.5.5</mybatis-plus.version>
+
+        <!-- 缓存 / 分布式锁 -->
+        <redisson.version>3.27.2</redisson.version>
+
+        <!-- 接口文档（Boot3 需 jakarta 版） -->
+        <knife4j.version>4.4.0</knife4j.version>
+
+        <!-- RPC（预留边界，Phase 按需引入） -->
+        <dubbo.version>3.2.12</dubbo.version>
+    </properties>
+
+    <!-- 版本统一锁定：子模块只声明依赖，不写版本号 -->
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Boot BOM -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Spring Cloud Alibaba BOM（Nacos/Sentinel；2023.0.3.4 为 Boot 3.4 社区验证组合） -->
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>${spring-cloud-alibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- MyBatis-Plus（Boot3 starter） -->
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+                <version>${mybatis-plus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-jsqlparser</artifactId>
+                <version>${mybatis-plus.version}</version>
+            </dependency>
+
+            <!-- Redisson（Boot3） -->
+            <dependency>
+                <groupId>org.redisson</groupId>
+                <artifactId>redisson-spring-boot-starter</artifactId>
+                <version>${redisson.version}</version>
+            </dependency>
+
+            <!-- Knife4j OpenAPI3（jakarta，Boot3 专用） -->
+            <dependency>
+                <groupId>com.github.xiaoymin</groupId>
+                <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
+                <version>${knife4j.version}</version>
+            </dependency>
+
+            <!-- Dubbo（预留 RPC 边界） -->
+            <dependency>
+                <groupId>org.apache.dubbo</groupId>
+                <artifactId>dubbo-spring-boot-starter</artifactId>
+                <version>${dubbo.version}</version>
+            </dependency>
+
+            <!-- 内部模块 -->
+            <dependency>
+                <groupId>cn.unimarket</groupId>
+                <artifactId>uni-market-types</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.unimarket</groupId>
+                <artifactId>uni-market-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.unimarket</groupId>
+                <artifactId>uni-market-domain</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.unimarket</groupId>
+                <artifactId>uni-market-infrastructure</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.unimarket</groupId>
+                <artifactId>uni-market-trigger</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.13.0</version>
+                    <configuration>
+                        <release>21</release>
+                        <parameters>true</parameters>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring-boot.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.2.5</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>
