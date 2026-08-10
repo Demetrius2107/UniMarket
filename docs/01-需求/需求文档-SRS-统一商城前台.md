@@ -28,7 +28,7 @@
 
 UniMarket 是一个面向 C 端用户的、融合多种营销玩法的完整电商平台。它不仅是"一个商城"，更是一个**可运营的营销引擎**——运营人员通过配置化的方式创造抽奖、拼团、积分兑换、签到返利等多种营销活动，驱动用户增长和转化。
 
-系统融合四个既有原项目的能力：支付原型（s-pay）、抽奖（Lottery）、营销（big-market）、拼团（group-buy-market），在其基础上补齐商品、购物车、优惠券、售后、物流、首页运营、消息中心等电商基础能力，形成完整闭环。
+系统参考业界成熟电商方案，自研覆盖支付、抽奖、营销、拼团等核心能力，并补齐商品、购物车、优惠券、售后、物流、首页运营、消息中心等电商基础能力，形成完整闭环。
 
 ### 1.3 需求范围
 
@@ -375,7 +375,7 @@ UniMarket 是一个面向 C 端用户的、融合多种营销玩法的完整电�
 | 编号 | 需求 | 说明 |
 |------|------|------|
 | NFR-COMP-01 | 浏览器兼容 | 现代 Chrome/Edge/Safari/微信内置浏览器 |
-| NFR-COMP-02 | JDK 兼容 | Java 8+ |
+| NFR-COMP-02 | JDK 兼容 | JDK 21 |
 
 ---
 
@@ -396,7 +396,7 @@ UniMarket 是一个面向 C 端用户的、融合多种营销玩法的完整电�
 ### 7.1 分库策略
 
 - **公共配置库（uni_market / db00）**：商品、分类、SKU、营销活动、抽奖策略/奖品/规则树、折扣、行为返利配置、人群标签、优惠券模板、物流、首页 Banner/频道、拼团队伍、通知任务。
-- **用户数据分库（uni_market_01 / uni_market_02）**：按 userId 哈希路由，每库 4 张分表（_000 ~ _003），共 8 分片：user、user_address、user_credit_account、user_credit_order、order、order_item、pay_order、lottery_order、user_award_record、group_buy_order、user_behavior_rebate_order、raffle_activity_account、cart_item、after_sale、user_coupon、user_message、mq_task。
+- **用户数据分库（uni_market_01 / uni_market_02）**：按 userId 哈希路由，每库 4 张分表（_000 ~ _003），共 8 分片：user、user_address、user_credit_account、user_credit_order、order、order_item、pay_order、raffle_order、user_award_record、group_buy_order、user_behavior_rebate_order、raffle_activity_account、cart_item、after_sale、user_coupon、user_message、mq_task。
 
 ### 7.2 数据一致性要求
 

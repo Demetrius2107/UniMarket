@@ -43,7 +43,7 @@
 <域>.<项>
 ```
 
-- 域：`spring` / `datasource` / `redis` / `mq` / `wechat` / `wxpay` / `alipay` / `kdniao` / `lottery` / `groupbuy` / `coupon` / `credit` / `risk` / `task` / `search` / `dcc`
+- 域：`spring` / `datasource` / `redis` / `mq` / `wechat` / `wxpay` / `alipay` / `kdniao` / `raffle` / `groupbuy` / `coupon` / `credit` / `risk` / `task` / `search` / `dcc`
 - 全小写连字符，避免歧义。
 
 ### 2.2 配置示例（application.yml 局部）
@@ -103,7 +103,7 @@ risk:
 | spring | `datasource.public-url` | 本地库 | ❌ | 公共库连接 | □ |
 | spring | `datasource.shard-url-01/02` | 本地库 | ❌ | 分库连接 | □ |
 | spring | `redis.*` | localhost | ❌ | Redis 连接 | □ |
-| mq | `mq.*` | localhost | ❌ | RabbitMQ 连接 | □ |
+| mq | `mq.*` | localhost | ❌ | RocketMQ 连接 | □ |
 | wechat | `wechat.app-id/secret` | — | ❌ | 公众号凭据 | □ |
 | wxpay | `wxpay.mch-id` 等 | — | ❌ | 微信支付凭据 | □ |
 | alipay | `alipay.app-id` 等 | — | ❌ | 支付宝凭据 | □ |
@@ -112,9 +112,9 @@ risk:
 | risk | `risk.rate-limit-per-second` | 1 | ✅ | 用户级限流阈值 | □ |
 | risk | `risk.blacklist-auto-threshold` | 5 | ✅ | 自动拉黑阈值 | □ |
 | risk | `risk.degrade-switch` | false | ✅ | 全局降级开关 | □ |
-| risk | `risk.lottery-degrade` | false | ✅ | 抽奖降级开关 | □ |
+| risk | `risk.raffle-degrade` | false | ✅ | 抽奖降级开关 | □ |
 | risk | `risk.groupbuy-degrade` | false | ✅ | 拼团降级开关 | □ |
-| lottery | `lottery.stock-reconcile-interval` | 5min | ✅ | 库存对账间隔 | □ |
+| raffle | `raffle.stock-reconcile-interval` | 5min | ✅ | 库存对账间隔 | □ |
 | groupbuy | `groupbuy.team-timeout-minutes` | 24h | ✅ | 拼团有效时长 | □ |
 | coupon | `coupon.calc-strategy` | greedy | ✅ | 最优券算法（greedy/combine） | □ |
 | search | `search.sync-mode` | canal | ✅ | 同步方式（canal/sdk） | □ |
@@ -125,22 +125,22 @@ risk:
 ## 5. 动态配置（DCC 降级开关）约定
 
 - **机制**：Redis Pub-Sub（或 Nacos 监听）广播配置变更，应用无需重启。
-- **命名**：`dcc:<域>:<开关名>`，如 `dcc:risk:lottery-degrade`。
+- **命名**：`dcc:<域>:<开关名>`，如 `dcc:risk:raffle-degrade`。
 - **消费方式**：应用启动时加载 + 订阅变更；配置类统一监听并刷新缓存。
 
 ```java
 // 配置监听示例（统一由 ConfigListener 组件处理，业务侧只读 getter）
 @Component
 public class DccRiskSwitch {
-    private volatile boolean lotteryDegrade;
+    private volatile boolean raffleDegrade;
 
     @PostConstruct
     public void init() {
-        lotteryDegrade = configCenter.getBoolean("dcc:risk:lottery-degrade", false);
-        configCenter.subscribe("dcc:risk:lottery-degrade", val -> this.lotteryDegrade = Boolean.parseBoolean(val));
+        raffleDegrade = configCenter.getBoolean("dcc:risk:raffle-degrade", false);
+        configCenter.subscribe("dcc:risk:raffle-degrade", val -> this.raffleDegrade = Boolean.parseBoolean(val));
     }
 
-    public boolean isLotteryDegrade() { return lotteryDegrade; }
+    public boolean isRaffleDegrade() { return raffleDegrade; }
 }
 ```
 

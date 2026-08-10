@@ -58,7 +58,7 @@
 | `product` | 商品/SKU | `product:detail:{productId}` |
 | `stock` | 库存 | `stock:activity:{activityId}` |
 | `order` | 订单 | `order:pay:{orderId}` |
-| `lottery` | 抽奖 | `lottery:strategy:{strategyId}` |
+| `raffle` | 抽奖 | `raffle:strategy:{strategyId}` |
 | `groupbuy` | 拼团 | `groupbuy:team:{teamId}` |
 | `credit` | 积分 | `credit:account:{userId}` |
 | `coupon` | 优惠券 | `coupon:user:{userId}` |
@@ -84,7 +84,7 @@
 |------|----------|------------|
 | String | 单值、计数、简单缓存 | `product:detail:{id}`（JSON 串）、`stock:activity:{id}`（INCR 计数） |
 | Hash | 对象/多字段 | `cart:{userId}`（skuId → {qty,selected,addTime}） |
-| List | 有序队列/消息 | 备用；正式异步走 RabbitMQ |
+| List | 有序队列/消息 | 备用；正式异步走 RocketMQ |
 | Set | 去重集合 | `risk:blacklist:{userId}`、`coupon:user:{userId}:used` |
 | ZSet | 排序/榜单 | `product:hot`（销量排序）、`msg:list:{userId}`（时间排序，可选） |
 
@@ -126,7 +126,7 @@
 | `product:detail:{productId}` | String | JSON | 10min | 商品详情缓存 | □ |
 | `stock:activity:{activityId}` | String | INCR 计数 | 活动结束 | 活动库存扣减 | □ |
 | `lock:stock:{activityId}` | String | `1` | 活动结束 | 库存分布式锁 | □ |
-| `lottery:strategy:{strategyId}` | String | 奖品概率数组/JSON | 活动期间 | 抽奖装配预热 | □ |
+| `raffle:strategy:{strategyId}` | String | 奖品概率数组/JSON | 活动期间 | 抽奖装配预热 | □ |
 | `groupbuy:team:{teamId}` | String | 队伍 JSON | 拼团过期 | 队伍进度缓存 | □ |
 | `credit:account:{userId}` | String | JSON（可用/冻结） | 30min | 积分账户缓存 | □ |
 | `risk:blacklist:{userId}` | Set | 拉黑原因 | 24h+ | 风控黑名单 | □ |

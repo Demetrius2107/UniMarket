@@ -78,7 +78,7 @@ rocketMQTemplate.syncSend("order.pay-wait-check:PAY", msg, 3000, 4); // delayLev
 <域>.<事件>:<Tag>
 ```
 
-- 域：业务域（同 Redis 规范：`order` / `lottery` / `groupbuy` / `credit` / `coupon` / `aftersale` / `message` / `logistics`）
+- 域：业务域（同 Redis 规范：`order` / `raffle` / `groupbuy` / `credit` / `coupon` / `aftersale` / `message` / `logistics`）
 - 事件：过去式动作，小写连字符，表达"已完成/已发生"
 - Tag：全大写，表达事件类别（如 `PAY` / `REFUND` / `GRANT` / `NOTIFY`），冒号分隔，消费者按 Tag 过滤
 - 全小写（Tag 除外），点号分隔，最多三级
@@ -90,7 +90,7 @@ rocketMQTemplate.syncSend("order.pay-wait-check:PAY", msg, 3000, 4); // delayLev
 | `order.pay-success:PAY` | 订单支付成功 |
 | `order.pay-timeout:PAY` | 订单支付超时 |
 | `order.refunded:REFUND` | 订单退款完成 |
-| `lottery.award-grant:GRANT` | 抽奖发奖 |
+| `raffle.award-grant:GRANT` | 抽奖发奖 |
 | `credit.adjust-success:CREDIT` | 积分调整成功 |
 | `groupbuy.team-success:GROUP` | 拼团成团 |
 | `groupbuy.team-fail:GROUP` | 拼团失败 |
@@ -152,7 +152,7 @@ rocketMQTemplate.syncSend("order.pay-wait-check:PAY", msg, 3000, 4); // delayLev
 | `order.pay-success:PAY` | 支付回调 | `cg.order` | 支付成功后续处理 | ✅ | □ |
 | `order.pay-timeout:PAY` | 超时关单任务 | `cg.order` | 释放资源 | ✅ | □ |
 | `order.refunded:REFUND` | 退款服务 | `cg.order` | 退积分退券 | ✅ | □ |
-| `lottery.award-grant:GRANT` | 抽奖服务 | `cg.lottery` | 异步发奖 | ✅ | □ |
+| `raffle.award-grant:GRANT` | 抽奖服务 | `cg.raffle` | 异步发奖 | ✅ | □ |
 | `credit.adjust-success:CREDIT` | 积分服务 | `cg.credit` | 积分兑换状态更新 | ✅ | □ |
 | `groupbuy.team-success:GROUP` | 成团判断 | `cg.groupbuy` | 成团回调通知 | ✅ | □ |
 | `groupbuy.team-fail:GROUP` | 超时任务 | `cg.groupbuy` | 超时退款 | ✅ | □ |

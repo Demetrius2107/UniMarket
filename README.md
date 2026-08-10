@@ -3,7 +3,7 @@
 > 面向 C 端用户的完整电商营销平台：融合支付、抽奖、营销、拼团、购物车、下单、履约，
 > 不仅是"一个商城"，更是**可运营的营销引擎**（抽奖 / 拼团 / 积分 / 优惠券 / 签到返利）。
 
-![Java](https://img.shields.io/badge/Java-8+-orange) ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.7.x-green) ![MySQL](https://img.shields.io/badge/MySQL-8.0-blue) ![Redis](https://img.shields.io/badge/Redis-6.2-red) ![RabbitMQ](https://img.shields.io/badge/RabbitMQ-3.12-orange)
+![Java](https://img.shields.io/badge/Java-21-orange) ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.x-green) ![MySQL](https://img.shields.io/badge/MySQL-8.4-blue) ![Redis](https://img.shields.io/badge/Redis-7.2-red) ![RocketMQ](https://img.shields.io/badge/RocketMQ-5.x-orange)
 
 ---
 
@@ -22,14 +22,14 @@
 
 ## 项目简介
 
-UniMarket 融合四个既有原项目的能力：
+UniMarket 参考业界成熟电商方案自研设计，核心能力覆盖：
 
-| 原项目 | 迁移能力 |
+| 能力域 | 覆盖内容 |
 |--------|----------|
-| 支付原型（s-pay） | 用户登录 + 支付模块基础原型 |
-| 抽奖（Lottery） | 抽奖引擎 + 分库分表方案 + 规则引擎 |
-| 营销（big-market） | 积分引擎 + 风控体系 + 监控体系 |
-| 拼团（group-buy-market） | 拼团引擎 + 折扣引擎 + 回调通知体系 |
+| 登录 + 支付 | 用户登录 + 支付模块基础原型 |
+| 抽奖 | 抽奖引擎 + 分库分表方案 + 规则引擎 |
+| 积分/风控/监控 | 积分引擎 + 风控体系 + 监控体系 |
+| 拼团/折扣 | 拼团引擎 + 折扣引擎 + 回调通知体系 |
 
 架构上采用 **DDD 六边形架构**：领域逻辑与技术框架解耦，模块化单体起步，接口预留 RPC 边界，未来可平滑拆分微服务。
 
@@ -39,12 +39,13 @@ UniMarket 融合四个既有原项目的能力：
 
 | 层面 | 技术 |
 |------|------|
-| 基础框架 | Spring Boot 2.7.x / Java 8+ / MyBatis |
-| 存储 | MySQL 8.0（分库分表 2×4） / Redis + Redisson |
-| 消息/调度 | RabbitMQ / XXL-Job |
+| 基础框架 | Spring Boot 3.4.x（JDK 21，jakarta 命名空间）/ MyBatis-Plus 3.5.5+ |
+| 存储 | MySQL 8.4 LTS（Phase 10 前单库，后期再分库分表）/ Redis 7.2 + Redisson / MinIO |
+| 中间件 | RocketMQ 5.x（业务线）+ Kafka 3.7+（日志线）/ Nacos / XXL-Job / Elasticsearch + Canal |
 | RPC/注册 | Apache Dubbo 3.x（预留）/ Nacos |
-| 搜索 | Elasticsearch + Canal |
-| 风控/监控 | Guava RateLimiter / Sentinel / Prometheus + Grafana / ELK |
+| 风控/监控 | Sentinel / Prometheus + Grafana / Micrometer Tracing / ELK |
+| 接口文档 | Knife4j 4.4+（OpenAPI3 + Swagger） |
+| 构建 | Maven 3.9.x 多模块 |
 | 容器化 | Docker Compose |
 | 前端 | React / Vue SPA（推荐，不限定） |
 
@@ -90,13 +91,13 @@ uni-market/
 
 ### 1. 前置要求
 
-- JDK 8+、Maven 3.6+、Docker + Docker Compose
+- JDK 21、Maven 3.9+、Docker + Docker Compose
 
 ### 2. 启动基础设施
 
 ```bash
 cd docs/docker
-docker compose up -d      # MySQL/Redis/RabbitMQ/Nacos/ES/Canal/XXL-Job/监控
+docker compose up -d      # MySQL/Redis/RocketMQ/Nacos/ES/Canal/XXL-Job/监控
 docker compose ps         # 确认全部 Up/healthy
 ```
 

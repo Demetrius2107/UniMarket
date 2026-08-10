@@ -7,7 +7,7 @@
 ## 目录
 
 1. [项目概述](#1-项目概述)
-2. [四个原项目回顾与能力映射](#2-四个原项目回顾与能力映射)
+2. [业务能力设计参考](#2-业务能力设计参考)
 3. [系统架构设计](#3-系统架构设计)
 4. [领域驱动设计](#4-领域驱动设计)
 5. [数据库设计](#5-数据库设计)
@@ -52,9 +52,9 @@
 
 ---
 
-## 2. 项目回顾与能力映射
+## 2. 业务能力设计参考
 
-### 2.1 支付原型
+### 2.1 支付与登录
 
 **核心能力**：
 - 微信公众号 OAuth 扫码登录
@@ -63,13 +63,13 @@
 - 定时补偿（掉单补偿 + 超时关单）
 - Guava EventBus 事件通知
 
-**这个项目教什么**：
+**设计要点**：
 - 支付回调的最终一致性（双重补偿：异步回调 + 定时主动查询）
 - 微信 OAuth 的 ticket 机制和轮询模式
 - 支付表单返回 HTML 让前端直接提交
 - 内网穿透在对接第三方回调时的必要性
 
-**在新系统中的位置**：用户登录模块 + 支付模块的基础原型
+**在本系统中的位置**：用户登录模块 + 支付模块的基础原型
 
 ### 2.2 抽奖
 
@@ -82,13 +82,13 @@
 - Kafka 异步发奖 + XXL-Job 消息补偿
 - Dubbo RPC 服务暴露
 
-**这个项目教什么**：
+**设计要点**：
 - 抽奖概率算法的数学原理和工程实现
 - 决策树规则引擎的设计模式（组合模式 + 过滤器链）
 - 分布式环境下的库存精确扣减（Redis 原子操作 + DB 行锁 + 分段锁）
 - 分库分表的路由策略和扰动函数
 
-**在新系统中的位置**：抽奖引擎核心 + 分库分表方案 + 规则引擎
+**在本系统中的位置**：抽奖引擎核心 + 分库分表方案 + 规则引擎
 
 ### 2.3 营销
 
@@ -103,13 +103,13 @@
 - Zookeeper DCC 动态配置中心
 - Prometheus + Grafana 监控
 
-**这个项目教什么**：
+**设计要点**：
 - 积分账户的事务一致性（正向/逆向交易 + MQ 最终一致性）
 - 多级风控体系（限流 → 黑名单 → 熔断 → 降级）
 - 读写分离（Canal 同步 MySQL → ES）
 - 动态配置中心的设计（无需重启即可切换开关）
 
-**在新系统中的位置**：积分引擎 + 风控体系 + 监控体系
+**在本系统中的位置**：积分引擎 + 风控体系 + 监控体系
 
 ### 2.4 拼团
 
@@ -124,13 +124,13 @@
 - 退单三种策略（未支付退单 / 已支付未成团退单 / 已成团退单）
 - 超时自动退单定时任务
 
-**这个项目教什么**：
+**设计要点**：
 - 拼团业务的核心难点：并发成团的临界判断
 - 跨服务的最终一致性方案（本地消息表 + MQ + 定时补偿）
 - 折扣计算的策略模式设计
 - 退款链路的状态机设计
 
-**在新系统中的位置**：拼团引擎 + 折扣引擎 + 回调通知体系
+**在本系统中的位置**：拼团引擎 + 折扣引擎 + 回调通知体系
 
 ### 2.5 能力映射总览
 
@@ -148,13 +148,10 @@
   │          │          │    ┌──────┴──────┐   │
   │          │          │    │             │   │
   │          │          │  抽奖引擎    拼团引擎 │
-  │          │          │  (Lottery) (group-buy)│
   │          │          │    │             │   │
   │          │          │  积分引擎    折扣引擎  │
-  │          │          │  (big-market)(group-buy)│
   │          │          │    │             │   │
   │          │          │  风控体系    通知体系  │
-  │          │          │  (big-market)(s-pay+gb)│
 ```
 
 ---
@@ -226,7 +223,7 @@ uni-market/
 │       │   ├── model/                 # 活动/策略/奖品/规则树
 │       │   ├── repository/            # 仓储接口
 │       │   └── service/               #
-│       │       ├── lottery/           # 抽奖引擎
+│       │       ├── raffle/           # 抽奖引擎
 │       │       │   ├── algorithm/     # 抽奖算法
 │       │       │   ├── chain/         # 规则责任链
 │       │       │   └── tree/          # 决策树引擎
@@ -270,7 +267,7 @@ uni-market/
 │       │   ├── UserController.java
 │       │   ├── ProductController.java
 │       │   ├── OrderController.java
-│       │   ├── LotteryController.java
+│       │   ├── RaffleController.java
 │       │   ├── GroupBuyController.java
 │       │   └── CreditController.java
 │       ├── rpc/                       # Dubbo RPC Facade
@@ -296,17 +293,18 @@ uni-market/
 
 | 层面 | 技术 | 用途 |
 |------|------|------|
-| 基础框架 | Spring Boot 2.7.x | 应用框架 |
-| JDK | Java 8+ | 开发语言 |
-| ORM | MyBatis-Spring-Boot 2.1.x | 数据访问 |
-| 数据库 | MySQL 8.0 | 主存储 |
-| 缓存 | Redis + Redisson | 缓存、分布式锁、库存扣减 |
-| 消息队列 | RabbitMQ | 异步解耦 |
-| RPC | Apache Dubbo 3.x | 服务间调用 |
+| 基础框架 | Spring Boot 3.4.x | 应用框架 |
+| JDK | JDK 21 | 开发语言 |
+| ORM | MyBatis-Plus 3.5.5+ | 数据访问 |
+| 数据库 | MySQL 8.4 LTS | 主存储 |
+| 缓存 | Redis 7.2 + Redisson | 缓存、分布式锁、库存扣减 |
+| 消息队列 | RocketMQ 5.x（业务线）+ Kafka 3.7+（日志线） | 异步解耦 |
+| RPC | Apache Dubbo 3.2+ | 服务间调用 |
 | 注册/配置 | Nacos | 服务发现 & 配置管理 |
 | 搜索引擎 | Elasticsearch + Canal | 订单查询、用户画像 |
+| 对象存储 | MinIO | 商品图/售后凭证等文件存储 |
 | 定时任务 | XXL-Job | 分布式任务调度 |
-| 限流熔断 | Guava RateLimiter + Sentinel | 流量控制 |
+| 限流熔断 | Sentinel + Guava RateLimiter | 流量控制 |
 | 监控 | Prometheus + Grafana | 系统监控 |
 | 日志 | ELK (Logstash + ES + Kibana) | 日志收集分析 |
 | 容器化 | Docker Compose | 环境部署 |
@@ -615,8 +613,8 @@ Logistics (实体，关联订单)
 | `CouponCalculateService` | 优惠计算 | `calculateBestCoupon(cart, userCoupons)` → 返回最优券组合 |
 | `AfterSaleService` | 售后管理 | `applyRefund()`, `applyReturn()`, `auditAfterSale()`, `shipReturn()`, `confirmReturn()` |
 | `LogisticsService` | 物流管理 | `queryTracking()`, `subscribeTracking()`, `handleTrackingCallback()` |
-| `LotteryDrawService` | 抽奖执行 | `doDraw()`, `doQuantificationDraw()` |
-| `LotteryAlgorithmService` | 抽奖算法 | `randomDraw(strategyId, excludeAwardIds)` |
+| `RaffleDrawService` | 抽奖执行 | `doDraw()`, `doQuantificationDraw()` |
+| `RaffleAlgorithmService` | 抽奖算法 | `randomDraw(strategyId, excludeAwardIds)` |
 | `RuleEngineService` | 规则引擎 | `processDecisionTree(treeId, matterMap)` |
 | `GroupBuyService` | 拼团管理 | `lockOrder()`, `settlementOrder()`, `refundOrder()` |
 | `GroupBuyTeamService` | 成团判断 | `tryCompleteTeam(teamId)` |
@@ -648,7 +646,7 @@ uni_market_01 / uni_market_02 — 用户数据分库（按 userId 哈希）
   ├── order（订单）
   ├── order_item（订单明细）
   ├── pay_order（支付单）
-  ├── lottery_order（抽奖订单）
+  ├── raffle_order（抽奖订单）
   ├── user_award_record（中奖记录）
   ├── group_buy_order（拼团订单）
   ├── user_behavior_rebate_order（返利订单）
@@ -1133,7 +1131,7 @@ CREATE TABLE `user_credit_order_000` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='积分流水表';
 
 -- 抽奖订单表（分库分表）
-CREATE TABLE `lottery_order_000` (
+CREATE TABLE `raffle_order_000` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `order_id` VARCHAR(32) NOT NULL COMMENT '抽奖订单ID(雪花算法)',
   `user_id` VARCHAR(32) NOT NULL,
@@ -1262,7 +1260,7 @@ CREATE TABLE `mq_task_000` (
 | 商品 | `/product/` | 商品查询 |
 | 订单 | `/order/` | 下单、支付、查询 |
 | 支付 | `/pay/` | 支付单创建、回调 |
-| 抽奖 | `/lottery/` | 抽奖、奖品查询 |
+| 抽奖 | `/raffle/` | 抽奖、奖品查询 |
 | 拼团 | `/groupbuy/` | 开团、参团、查询 |
 | 积分 | `/credit/` | 积分查询、积分兑换 |
 | 返利 | `/rebate/` | 签到、行为返利 |
@@ -1369,13 +1367,13 @@ CREATE TABLE `mq_task_000` (
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | `/lottery/draw` | 执行抽奖 |
-| POST | `/lottery/quantification_draw` | 量化人群抽奖 |
-| GET | `/lottery/strategy/armory?strategyId={id}` | 策略装配(数据预热) |
-| GET | `/lottery/activity/armory?activityId={id}` | 活动装配(数据预热) |
-| POST | `/lottery/award_list` | 查询活动奖品列表 |
-| POST | `/lottery/user_award_records` | 用户中奖记录查询 |
-| POST | `/lottery/activity_account` | 查询用户活动账户(剩余次数) |
+| POST | `/raffle/draw` | 执行抽奖 |
+| POST | `/raffle/quantification_draw` | 量化人群抽奖 |
+| GET | `/raffle/strategy/armory?strategyId={id}` | 策略装配(数据预热) |
+| GET | `/raffle/activity/armory?activityId={id}` | 活动装配(数据预热) |
+| POST | `/raffle/award_list` | 查询活动奖品列表 |
+| POST | `/raffle/user_award_records` | 用户中奖记录查询 |
+| POST | `/raffle/activity_account` | 查询用户活动账户(剩余次数) |
 
 ### 6.13 拼团模块
 
@@ -1756,7 +1754,7 @@ PENDING_AUDIT → AUDIT_PASS → [PENDING_SHIP → SHIPPED → RECEIVED] → REF
 │                        抽奖流程全景                            │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  用户请求抽奖 POST /lottery/draw                               │
+│  用户请求抽奖 POST /raffle/draw                               │
 │    │                                                         │
 │    ▼                                                         │
 │  ┌─────────────────────┐                                     │
@@ -2260,7 +2258,7 @@ services:
     ┌──────────┼──────────┐
     ▼          ▼          ▼
 ┌────────┐ ┌──────┐ ┌─────────┐
-│ MySQL  │ │Redis │ │RabbitMQ │
+│ MySQL  │ │Redis │ │RocketMQ │
 │ (主从) │ │(哨兵)│ │(集群)   │
 └────────┘ └──────┘ └─────────┘
 ```
@@ -2436,7 +2434,7 @@ Phase 12 ███  全链路压测 + 文档 + 收尾                           
 | 认知 | 说明 |
 |------|------|
 | **不做成淘宝** | 淘宝有 50+ 个微服务、上千工程师。目标是做一个**功能完整、逻辑闭环、可运行演示**的系统，不是商业级 SaaS 产品 |
-| **借力四个原项目** | 四个参考项目的代码总量已经覆盖了 60%+ 的工作量。你不是从零写，是在已有轮子上造车 |
+| **复用成熟方案** | 参考业界成熟电商方案的设计与实现，可覆盖 60%+ 的工作量，降低从零设计成本 |
 | **先骨架后血肉** | Phase 1 只有 5 个 API，跑通最简链路就能看到成果。后续每个 Phase 都是独立可交付的增量 |
 
 ### 11.2 工作量估算
@@ -2444,20 +2442,20 @@ Phase 12 ███  全链路压测 + 文档 + 收尾                           
 ```
 模块                    复杂度      已有参考      自研工作量
 ───────────────────────────────────────────────────────────
-用户登录                   ★★☆        s-pay ✅       低（改微信配置即可）
+用户登录                   ★★☆        ✅              低（改微信配置即可）
 商品管理                   ★★☆        —              中（CRUD为主）
-商品搜索(ES)               ★★★        big-market ✅   低（Canal配置为主）
+商品搜索(ES)               ★★★        ✅              低（Canal配置为主）
 购物车                     ★★☆        —              低（纯Redis数据结构）
-订单 + 支付                ★★★        s-pay ✅       中（需要增加券/积分逻辑）
-抽奖引擎                   ★★★★       Lottery ✅     低（算法可直接复用）
-拼团引擎                   ★★★★       group-buy ✅   低（流程可直接复用）
-积分体系                   ★★★        big-market ✅  低（账户模型可直接复用）
+订单 + 支付                ★★★        ✅              中（需要增加券/积分逻辑）
+抽奖引擎                   ★★★★       ✅              低（算法可直接复用）
+拼团引擎                   ★★★★       ✅              低（流程可直接复用）
+积分体系                   ★★★        ✅              低（账户模型可直接复用）
 优惠券系统                  ★★★        —              中（全新设计但逻辑清晰）
 物流追踪                   ★★☆        —              低（对接一个API即可）
 售后体系                   ★★★        —              中（状态机+退款链路）
 首页运营                   ★☆☆        —              低（几张配置表+查表API）
 消息中心                   ★☆☆        —              低（一张表+CRUD）
-风控 + 分库分表            ★★★★       Lottery+big ✅ 低（直接复用）
+风控 + 分库分表            ★★★★       ✅              低（直接复用）
 运营后台(ERP)              ★★☆        —              中（CRUD为主，路由即可）
 ───────────────────────────────────────────────────────────
 总估：16 周（约 4 个月），每天投入 3-4 小时
@@ -2479,7 +2477,7 @@ Phase 12 ███  全链路压测 + 文档 + 收尾                           
 | 风险 | 对策 |
 |------|------|
 | 优惠券 + 积分 + 折扣的互斥/叠加规则容易乱 | 先定规则矩阵（见下表），代码用一个 `calculateFinalPrice()` 统一入口 |
-| 拼团并发成团的临界 bug | 开源的 group-buy-market 已有成熟方案，直接复用 |
+| 拼团并发成团的临界 bug | 参考业界成熟拼团方案 + 并发压测验证 |
 | 优惠券计算的最优解算法 | 先做贪心（取最大优惠的单张券），后续优化为组合遍历 |
 | 售后退款 + 退券 + 退积分的事务一致性 | 用本地消息表 + MQ 最终一致，不追求强一致 |
 | 16 周的战线太长容易放弃 | 每个 Phase 产出是可独立演示的，做完即有所得 |
@@ -2523,45 +2521,45 @@ Phase 12 ███  全链路压测 + 文档 + 收尾                           
 
 ## 附录
 
-### A. 与原项目的差异和改进
+### A. 与业界参考方案的差异和改进
 
-| 方面 | 四个原项目 | 新系统改进 |
+| 方面 | 业界参考方案 | 本系统改进 |
 |------|-----------|-----------|
-| 用户体系 | 各项目独立登录 | 统一微信登录 + JWT Token + 用户画像 |
+| 用户体系 | 各方案独立登录 | 统一微信登录 + JWT Token + 用户画像 |
 | 商品管理 | 缺失或 Mock | 完整的商品/SKU/库存/分类 + ES 搜索 |
 | 购物车 | 全部缺失 | Redis 热存储 + MySQL 冷备份 + 登录合并 |
 | 订单体系 | 分散或简化 | 统一订单模型，关联营销活动，支持券+积分 |
 | 支付渠道 | 仅支付宝或缺失 | 支付渠道抽象 + 统一收银台（支付宝+微信） |
 | 优惠券 | 全部缺失 | 满减/折扣/运费/商品券 + 最优计算引擎 |
 | 营销玩法 | 各自独立 | 共享活动管理 + 抽奖+拼团+积分+券联动 |
-| 积分体系 | 仅 big-market | 统一积分账户，与券形成互斥规则 |
+| 积分体系 | 已有积分雏形 | 统一积分账户，与券形成互斥规则 |
 | 售后体系 | 仅基础退款 | 退款/退货退款 + 退券 + 退积分 + 审核流 |
 | 物流追踪 | 全部缺失 | 对接快递鸟 + 轨迹订阅 + 自动签收 |
 | 首页运营 | 全部缺失 | Banner + 频道 + 推荐 + 活动Tab |
 | 消息中心 | 仅微信模板消息 | 站内消息 + 未读计数 + 事件触发 |
 | 代码架构 | DDD 程度不一 | 统一 DDD 六边形架构 |
-| 风控体系 | 仅 big-market | 全链路风控（限流/黑名单/熔断/降级） |
-| 监控体系 | 仅 big-market | 全链路可观测 |
+| 风控体系 | 已有基础风控 | 全链路风控（限流/黑名单/熔断/降级） |
+| 监控体系 | 已有基础监控 | 全链路可观测 |
 
 ### B. 需要补充学习的知识点
 
-| 知识领域 | 具体内容 | 对应项目 |
+| 知识领域 | 具体内容 | 对应模块 |
 |----------|----------|----------|
-| 微信 OAuth 2.0 | 授权码模式、ticket 机制、轮询登录 | 支付商城原型 |
-| 支付宝开放平台 | 沙箱环境、支付单创建、RSA2 验签、异步通知 | 支付商城原型 |
-| 概率算法 | 斐波那契散列、总体/单项概率、SecureRandom | Lottery |
-| 决策树引擎 | 组合模式实现规则树、过滤器责任链 | Lottery + big-market |
-| 分库分表 | 哈希路由、扰动函数、MyBatis 拦截器 | Lottery + big-market |
-| Redis 分布式锁 | SETNX、Redisson、分段锁、锁续期 | 所有项目 |
-| 本地消息表 | 事务内写消息、定时补偿、幂等消费 | group-buy-market |
-| 积分账户设计 | 正向/逆向交易、冻结/可用余额、事务一致性 | big-market |
-| 限流熔断 | RateLimiter、Sentinel/Hystrix、滑动窗口 | big-market |
-| 动态配置 | DCC 原理（Zookeeper/Redis Pub-Sub） | big-market + group-buy-market |
-| Canal 数据同步 | MySQL Binlog → ES，读写分离 | big-market |
+| 微信 OAuth 2.0 | 授权码模式、ticket 机制、轮询登录 | 支付模块 |
+| 支付宝开放平台 | 沙箱环境、支付单创建、RSA2 验签、异步通知 | 支付模块 |
+| 概率算法 | 斐波那契散列、总体/单项概率、SecureRandom | 抽奖模块 |
+| 决策树引擎 | 组合模式实现规则树、过滤器责任链 | 抽奖/营销模块 |
+| 分库分表 | 哈希路由、扰动函数、MyBatis 拦截器 | 抽奖/营销模块 |
+| Redis 分布式锁 | SETNX、Redisson、分段锁、锁续期 | 通用 |
+| 本地消息表 | 事务内写消息、定时补偿、幂等消费 | 拼团模块 |
+| 积分账户设计 | 正向/逆向交易、冻结/可用余额、事务一致性 | 营销模块 |
+| 限流熔断 | RateLimiter、Sentinel/Hystrix、滑动窗口 | 营销模块 |
+| 动态配置 | DCC 原理（Zookeeper/Redis Pub-Sub） | 营销/拼团模块 |
+| Canal 数据同步 | MySQL Binlog → ES，读写分离 | 营销模块 |
 
 ### C. 关键设计决策记录
 
-1. **为什么选 RabbitMQ 而不是 Kafka？** — RabbitMQ 对延迟敏感的业务（如支付回调）更友好，支持更灵活的路由。如果未来日志/埋点量大可加 Kafka 作为第二条 MQ 线。
+1. **为什么选 RocketMQ + Kafka 双 MQ？** — RocketMQ 对延迟敏感的业务（如支付回调）更友好，支持事务/延迟/顺序消息；Kafka 只做日志/埋点大数据线，职责分离（详见 ADR-10）。
 
 2. **为什么保留分库分表？** — 拼团和抽奖的用户参与记录量级可达亿级，在 userId 维度分片是最自然的选择。2×4 分片足够中小规模，后续可平滑扩容到 4×8。
 

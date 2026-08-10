@@ -32,7 +32,7 @@
 
 - 《PRD-统一商城前台 v2.0》
 - 《需求文档-SRS v1.0》
-- 四个原项目（s-pay / Lottery / big-market / group-buy-market）的既有设计与代码
+- 业界成熟电商方案的设计参考（支付/抽奖/营销/拼团）与自研实现
 
 ### 1.3 设计范围
 
@@ -46,13 +46,13 @@
 |------|------|
 | DDD 六边形架构 | 领域层为核心，技术与外部依赖（DB/MQ/Redis/外部 API）通过端口-适配器隔离 |
 | 先走通再优化 | 模块化单体起步，接口预留 RPC 边界，未来可平滑拆分为微服务 |
-| 复用优先 | 四个原项目已覆盖 60%+ 能力，直接迁移复用而非重写 |
+| 复用优先 | 参考业界成熟方案已覆盖 60%+ 能力，迁移设计思路而非重写 |
 | 最终一致性 | 跨模块写操作采用"本地消息表 + MQ + 定时补偿"三层保障 |
 | 可运营 | 营销活动配置化，运营无需发版即可创建/上下线活动 |
 
 **约束**：
-- Java 8+、Spring Boot 2.7.x 生态
-- MySQL 8.0 / Redis / RabbitMQ / Nacos / XXL-Job 为基础中间件
+- JDK 21、Spring Boot 3.4.x 生态
+- MySQL 8.4 / Redis 7.2 / RocketMQ / Kafka / Nacos / XXL-Job 为基础中间件
 - 一人全栈开发，周期 16 周
 
 ---
@@ -149,14 +149,14 @@
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 3.4 能力映射（原项目 → 新系统）
+### 3.4 能力映射
 
-| 原项目 | 迁移到新系统的能力 |
+| 能力域 | 对应实现 |
 |--------|------------------|
-| 支付原型 s-pay | 用户登录模块 + 支付模块基础原型 |
-| Lottery 抽奖 | 抽奖引擎核心 + 分库分表方案 + 规则引擎 |
-| big-market 营销 | 积分引擎 + 风控体系 + 监控体系 |
-| group-buy-market 拼团 | 拼团引擎 + 折扣引擎 + 回调通知体系 |
+| 登录 + 支付 | 用户登录模块 + 支付模块基础原型 |
+| 抽奖 | 抽奖引擎核心 + 分库分表方案 + 规则引擎 |
+| 积分/风控/监控 | 积分引擎 + 风控体系 + 监控体系 |
+| 拼团/折扣 | 拼团引擎 + 折扣引擎 + 回调通知体系 |
 
 ---
 
@@ -181,7 +181,7 @@ uni-market/
 │       ├── order/                     # 订单领域（model/repository/service：下单/支付/退款）
 │       ├── marketing/                 # 营销领域 ★重点★
 │       │   └── service/
-│       │       ├── lottery/           #   抽奖引擎（algorithm/chain/tree）
+│       │       ├── raffle/           #   抽奖引擎（algorithm/chain/tree）
 │       │       ├── groupbuy/          #   拼团引擎（lock/settlement/refund）
 │       │       ├── credit/            #   积分引擎
 │       │       ├── rebate/            #   返利引擎
@@ -200,7 +200,7 @@ uni-market/
 ├── uni-market-trigger/                # 触发器层
 │   └── src/main/java/cn/unimarket/trigger/
 │       ├── http/                      # UserController/ProductController/OrderController/
-│       │                              # LotteryController/GroupBuyController/CreditController
+│       │                              # RaffleController/GroupBuyController/CreditController
 │       ├── rpc/  mq/  job/            # Dubbo Facade / MQ 监听 / XXL-Job
 │       └── portal/                    # WeixinPortalController / AlipayNotifyController
 │
@@ -385,8 +385,8 @@ Logistics (实体，关联订单)
 | `CouponCalculateService` | 优惠计算 | `calculateBestCoupon(cart, userCoupons)` |
 | `AfterSaleService` | 售后管理 | `applyRefund()` / `applyReturn()` / `auditAfterSale()` / `shipReturn()` / `confirmReturn()` |
 | `LogisticsService` | 物流管理 | `queryTracking()` / `subscribeTracking()` / `handleTrackingCallback()` |
-| `LotteryDrawService` | 抽奖执行 | `doDraw()` / `doQuantificationDraw()` |
-| `LotteryAlgorithmService` | 抽奖算法 | `randomDraw(strategyId, excludeAwardIds)` |
+| `RaffleDrawService` | 抽奖执行 | `doDraw()` / `doQuantificationDraw()` |
+| `RaffleAlgorithmService` | 抽奖算法 | `randomDraw(strategyId, excludeAwardIds)` |
 | `RuleEngineService` | 规则引擎 | `processDecisionTree(treeId, matterMap)` |
 | `GroupBuyService` | 拼团管理 | `lockOrder()` / `settlementOrder()` / `refundOrder()` |
 | `GroupBuyTeamService` | 成团判断 | `tryCompleteTeam(teamId)` |
@@ -418,7 +418,7 @@ uni_market (db00) — 公共配置库（不分片）
 uni_market_01 / uni_market_02 — 用户数据分库（按 userId 哈希，2×4 = 8 分片）
   ├── user / user_address / user_credit_account / user_credit_order
   ├── order / order_item / pay_order
-  ├── lottery_order / user_award_record / raffle_activity_account
+  ├── raffle_order / user_award_record / raffle_activity_account
   ├── group_buy_order / user_behavior_rebate_order
   ├── cart_item / after_sale / user_coupon / user_message / mq_task
 ```
@@ -452,7 +452,7 @@ uni_market_01 / uni_market_02 — 用户数据分库（按 userId 哈希，2×4 
 | `pay_order_000~_003` | db01/02 | pay_id, order_id, user_id, pay_channel, out_trade_no, pay_amount, pay_url, status, pay_time, notify_time | uk_pay_id, idx_order_id, idx_out_trade_no |
 | `user_credit_account_000~_003` | db01/02 | user_id, total_amount, available_amount, freeze_amount | uk_user_id |
 | `user_credit_order_000~_003` | db01/02 | user_id, order_id, trade_type(FORWARD/REVERSE), trade_amount, trade_name, out_biz_no | uk_order_id, idx_user_id |
-| `lottery_order_000~_003` | db01/02 | order_id, user_id, activity_id, strategy_id, take_id, award_id, award_type, grant_state, mq_state | uk_order_id, idx_mq_state |
+| `raffle_order_000~_003` | db01/02 | order_id, user_id, activity_id, strategy_id, take_id, award_id, award_type, grant_state, mq_state | uk_order_id, idx_mq_state |
 | `raffle_activity_account_000~_003` | db01/02 | user_id, activity_id, total/day/month_count + surplus | uk_user_activity |
 | `group_buy_order_000~_003` | db01/02 | user_id, team_id, order_id, activity_id, status, out_trade_no, biz_id(防重) | uk_order_id, uk_biz_id, idx_team_id |
 | `cart_item_000~_003` | db01/02 | user_id, sku_id, product_id, quantity, selected | idx_user_id |
@@ -503,7 +503,7 @@ erDiagram
 | 商品 | `/product/` | 商品查询 |
 | 订单 | `/order/` | 下单、支付、查询 |
 | 支付 | `/pay/` | 支付单创建、回调 |
-| 抽奖 | `/lottery/` | 抽奖、奖品查询 |
+| 抽奖 | `/raffle/` | 抽奖、奖品查询 |
 | 拼团 | `/groupbuy/` | 开团、参团、查询 |
 | 积分 | `/credit/` | 积分查询、积分兑换 |
 | 返利 | `/rebate/` | 签到、行为返利 |
@@ -548,9 +548,9 @@ erDiagram
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | `/lottery/draw` / `/lottery/quantification_draw` | 抽奖 / 量化抽奖 |
-| GET | `/lottery/strategy/armory` / `/lottery/activity/armory` | 策略/活动装配（预热） |
-| POST | `/lottery/award_list` / `/lottery/user_award_records` / `/lottery/activity_account` | 奖品列表 / 中奖记录 / 账户次数 |
+| POST | `/raffle/draw` / `/raffle/quantification_draw` | 抽奖 / 量化抽奖 |
+| GET | `/raffle/strategy/armory` / `/raffle/activity/armory` | 策略/活动装配（预热） |
+| POST | `/raffle/award_list` / `/raffle/user_award_records` / `/raffle/activity_account` | 奖品列表 / 中奖记录 / 账户次数 |
 | POST | `/groupbuy/index` / `/groupbuy/lock_order` / `/groupbuy/settlement` / `/groupbuy/refund` | 首页 / 锁单 / 结算 / 退单 |
 | GET | `/groupbuy/team_detail` / `/groupbuy/user_teams` | 队伍详情 / 我的拼团 |
 | GET | `/credit/account` / POST `/credit/exchange` / POST `/credit/records` | 账户 / 兑换 / 流水 |
@@ -877,7 +877,7 @@ kibana:7.17.14              # 5601
     ┌──────────┼──────────┐
     ▼          ▼          ▼
 ┌────────┐ ┌──────┐ ┌─────────┐
-│ MySQL  │ │Redis │ │RabbitMQ │
+│ MySQL  │ │Redis │ │RocketMQ │
 │ (主从) │ │(哨兵)│ │(集群)   │
 └────────┘ └──────┘ └─────────┘
 ```

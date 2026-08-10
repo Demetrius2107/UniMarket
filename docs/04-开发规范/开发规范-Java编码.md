@@ -135,7 +135,7 @@
 
 ```java
 // 线程池统一由工厂创建，禁止各业务自建
-ThreadPoolExecutor executor = ThreadPoolFactory.create("lottery-award",
+ThreadPoolExecutor executor = ThreadPoolFactory.create("raffle-award",
     core = 4, max = 8, queue = 1024, RejectedExecutionHandler = CallerRuns);
 ```
 
