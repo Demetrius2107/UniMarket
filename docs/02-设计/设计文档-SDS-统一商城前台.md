@@ -464,6 +464,25 @@ uni_market_01 / uni_market_02 — 用户数据分库（按 userId 哈希，2×4 
 - **积分交易防重**：`out_biz_no` 唯一。
 - **通知/消息最终一致**：业务事务内写本地消息表（notify_task/mq_task），事务提交后发 MQ，XXL-Job 每分钟扫描补偿。
 
+### 7.4 核心 ER 图（Mermaid）
+
+```mermaid
+erDiagram
+    USER ||--o{ ORDER : "拥有订单"
+    USER ||--o{ USER_COUPON : "持有券"
+    USER ||--|| USER_CREDIT_ACCOUNT : "积分账户"
+    ORDER ||--|{ ORDER_ITEM : "包含明细"
+    ORDER ||--|| PAY_ORDER : "支付单"
+    ORDER ||--o| AFTER_SALE : "售后"
+    ORDER ||--o| GROUP_BUY_ORDER : "拼团订单"
+    PRODUCT ||--|{ SKU : "包含SKU"
+    ACTIVITY ||--|{ ACTIVITY_SKU : "关联商品"
+    STRATEGY ||--|{ STRATEGY_AWARD : "配置奖品"
+    STRATEGY_AWARD }|--|| AWARD : "指向奖品"
+    COUPON_TEMPLATE ||--o{ USER_COUPON : "发放"
+    GROUP_BUY_TEAM ||--|{ GROUP_BUY_ORDER : "队伍成员"
+```
+
 ---
 
 ## 8. API 接口设计
@@ -567,6 +586,30 @@ uni_market_01 / uni_market_02 — 用户数据分库（按 userId 哈希，2×4 
 
 关键点：ticket→openId 缓存 5 分钟；前端每 2 秒轮询，最多 150 次；轮询接口限流（同一 ticket 每 2 秒 1 次）。
 
+#### 9.1.1 登录时序图（Mermaid）
+
+```mermaid
+sequenceDiagram
+    participant FE as 用户端(浏览器)
+    participant BE as 服务端
+    participant WX as 微信服务器
+    FE->>BE: GET /user/weixin_qrcode_ticket
+    BE->>WX: 获取 access_token
+    WX-->>BE: access_token
+    BE->>WX: 生成二维码 ticket
+    WX-->>BE: ticket
+    BE-->>FE: { ticket }
+    FE->>FE: 展示微信二维码
+    WX-->>BE: 扫码事件回调(openId)
+    BE->>BE: 缓存 ticket→openId (Redis)
+    loop 每 2 秒轮询(最多 150 次)
+        FE->>BE: GET /user/check_login?ticket=
+        BE->>BE: 查 Redis 获取 openId
+        BE->>BE: 查 DB 或创建用户, 生成 JWT
+        BE-->>FE: { token, userInfo }
+    end
+```
+
 ### 9.2 普通下单 + 支付
 
 ```
@@ -582,6 +625,31 @@ uni_market_01 / uni_market_02 — 用户数据分库（按 userId 哈希，2×4 
 
 **掉单补偿**（每 1 分钟）：查 pay_order status=CREATE 且 >5 分钟 → 主动 queryPayStatus → 已支付补执行回调。
 **超时关单**（每 5 分钟）：order status=PAY_WAIT 且 >30 分钟 → CLOSE，释放库存、退券、退积分。
+
+#### 9.2.1 下单支付时序图（Mermaid）
+
+```mermaid
+sequenceDiagram
+    participant FE as 用户端
+    participant BE as UniMarket
+    participant PAY as 支付渠道(支付宝/微信)
+    FE->>BE: POST /order/create
+    BE->>BE: 校验价格/库存 → 计算金额 → 建单(CREATE)
+    BE-->>FE: { orderId }
+    FE->>BE: POST /order/pay
+    BE->>BE: 幂等校验 → 创建支付单
+    BE->>PAY: 调用支付渠道创建支付
+    PAY-->>BE: 支付URL/表单
+    BE->>BE: 更新订单 status=PAY_WAIT
+    BE-->>FE: { payUrl }
+    FE->>FE: 跳转支付页面, 用户完成支付
+    PAY-->>BE: 异步支付回调
+    BE->>BE: RSA2/APIv3 验签 → 校验 TRADE_SUCCESS
+    BE->>BE: 订单 → PAY_SUCCESS → 发 MQ(支付成功事件)
+    BE-->>PAY: 返回 SUCCESS
+    Note over BE: 掉单补偿(1min) 主动查单补回调
+    Note over BE: 超时关单(5min) PAY_WAIT>30min → CLOSE
+```
 
 ### 9.3 购物车 → 下单全链路
 
@@ -643,6 +711,38 @@ uni_market_01 / uni_market_02 — 用户数据分库（按 userId 哈希，2×4 
 EDIT →(提审) ARRAIGNMENT →(通过) PASS →(启动) DOING →(到期) CLOSE →(重开) OPEN
         (撤审→EDIT)          (拒绝→REFUSE)
 定时任务：PASS 到 beginTime → DOING；DOING 超 endTime → CLOSE
+```
+
+#### 9.9.1 活动状态机（Mermaid）
+
+```mermaid
+stateDiagram-v2
+    [*] --> EDIT
+    EDIT --> ARRAIGNMENT: 提审
+    ARRAIGNMENT --> EDIT: 撤审
+    ARRAIGNMENT --> PASS: 审核通过
+    ARRAIGNMENT --> REFUSE: 审核拒绝
+    REFUSE --> EDIT: 修改重提
+    PASS --> DOING: 启动/到达 beginTime
+    DOING --> CLOSE: 超过 endTime
+    CLOSE --> OPEN: 重新开启
+    OPEN --> DOING: 再次启动
+```
+
+#### 9.9.2 订单状态机（Mermaid）
+
+```mermaid
+stateDiagram-v2
+    [*] --> CREATE: 创建订单
+    CREATE --> PAY_WAIT: 发起支付
+    PAY_WAIT --> PAY_SUCCESS: 支付回调成功
+    PAY_WAIT --> CLOSE: 超时30分钟关单
+    CREATE --> CLOSE: 用户取消
+    PAY_SUCCESS --> DEAL_DONE: 确认收货/自动签收
+    PAY_SUCCESS --> REFUND: 申请退款通过
+    DEAL_DONE --> [*]
+    CLOSE --> [*]
+    REFUND --> [*]
 ```
 
 ---

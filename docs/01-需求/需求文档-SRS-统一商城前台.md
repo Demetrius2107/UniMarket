@@ -458,4 +458,174 @@ UniMarket 是一个面向 C 端用户的、融合多种营销玩法的完整电�
 
 ---
 
+## 9. 用户故事（User Story）
+
+### 9.1 用户端（C 端）
+
+| 编号 | 角色 | 用户故事 | 关联需求 | 优先级 |
+|------|------|----------|----------|--------|
+| US-01 | 游客 | 作为游客，我希望扫码即可登录，无需注册，以便快速开始购物 | FR-USER-01/02 | P0 |
+| US-02 | 用户 | 作为用户，我希望浏览商品并搜索筛选，以便找到想要的商品 | FR-PRODUCT/FR-SEARCH | P0 |
+| US-03 | 用户 | 作为用户，我希望把商品加入购物车并在登录后自动合并，以便统一结算 | FR-CART-01/04 | P0 |
+| US-04 | 用户 | 作为用户，我希望用优惠券和积分抵扣后下单支付，以便获得优惠 | FR-ORDER/FR-COUPON/FR-CREDIT | P0 |
+| US-05 | 用户 | 作为用户，我希望发起或参与拼团，成团后享受折扣价 | FR-GROUPBUY | P0 |
+| US-06 | 用户 | 作为用户，我希望签到获取积分并参与抽奖，以便获得额外奖励 | FR-REBATE/FR-LOTTERY/FR-CREDIT | P0 |
+| US-07 | 用户 | 作为用户，我希望追踪我的订单物流并在签收后自动确认，以便掌握进度 | FR-LOGISTICS/FR-ORDER-06 | P1 |
+| US-08 | 用户 | 作为用户，我希望申请退款/退货并收到退款退券退积分，以便保障权益 | FR-AFTERSALE | P1 |
+| US-09 | 用户 | 作为用户，我希望收到订单/活动/券到期的消息提醒，以便不错过重要事项 | FR-MESSAGE | P2 |
+
+### 9.2 运营端（ERP）
+
+| 编号 | 角色 | 用户故事 | 关联需求 | 优先级 |
+|------|------|----------|----------|--------|
+| US-10 | 运营 | 作为运营，我希望创建并审核营销活动（抽奖/拼团），以便驱动用户增长 | FR-ACTIVITY/FR-ERP-01 | P1 |
+| US-11 | 运营 | 作为运营，我希望配置抽奖奖品概率与规则树，以便灵活运营 | FR-ERP-02/FR-LOTTERY | P1 |
+| US-12 | 运营 | 作为运营，我希望创建/发布优惠券并查看核销数据，以便评估效果 | FR-ERP-03/FR-COUPON | P1 |
+| US-13 | 运营 | 作为运营，我希望管理商品上下架与发货，以便保障供应与履约 | FR-ERP-04/05 | P1 |
+| US-14 | 运营 | 作为运营，我希望审核售后并确认退货收货，以便完成逆向流程 | FR-ERP-06 | P1 |
+| US-15 | 运营 | 作为运营，我希望查看 GMV/订单/活动转化看板，以便做运营决策 | FR-ERP-08 | P2 |
+
+---
+
+## 10. 业务规则明细（BR）
+
+> 业务规则是需求的补充约束，开发实现必须遵守；冲突时以本表为准。
+
+### 10.1 金额与优惠计算
+
+| 编号 | 规则 | 说明 |
+|------|------|------|
+| BR-01 | 实付金额计算顺序 | 商品金额 → 减优惠券 → 减积分抵扣 → 实付金额（单入口 `calculateFinalPrice()`） |
+| BR-02 | 互斥矩阵 | 拼团下单：拼团折扣生效，券与积分不可用；普通下单：券+积分可叠加；积分兑换：只扣积分；抽奖兑换次数：只扣积分 |
+| BR-03 | 金额精度 | 全程 BigDecimal，分位 HALF_UP；JSON 序列化字符串防精度丢失 |
+| BR-04 | 价格快照校验 | 下单时价格与加购时价格浮动超阈值，提示用户确认 |
+
+### 10.2 订单与支付
+
+| 编号 | 规则 | 说明 |
+|------|------|------|
+| BR-05 | 订单状态机 | CREATE → PAY_WAIT → PAY_SUCCESS → DEAL_DONE / CLOSE / REFUND；非法流转拒绝 |
+| BR-06 | 超时关单 | PAY_WAIT 超 30 分钟自动 CLOSE，释放库存、退券、退积分 |
+| BR-07 | 掉单补偿 | 支付单 CREATE 超 5 分钟主动查单，已支付补执行回调（≤2 分钟闭环） |
+| BR-08 | 支付回调幂等 | 以 out_trade_no 幂等，重复回调不重复处理；验签失败拒绝 |
+| BR-09 | 支付金额核对 | 回调金额与支付单金额不一致 → 拒绝 + 告警 |
+
+### 10.3 库存
+
+| 编号 | 规则 | 说明 |
+|------|------|------|
+| BR-10 | 三层库存保障 | Redis INCR 快速失败 → DB 行锁精确扣减 → 定时对账（以 DB 为准） |
+| BR-11 | 库存不超卖 | 扣减条件 `award_surplus_count > 0`，affectedRows=0 视为售罄 |
+| BR-12 | 活动库存独立 | 活动 SKU 库存与普通库存分离管理 |
+
+### 10.4 营销活动
+
+| 编号 | 规则 | 说明 |
+|------|------|------|
+| BR-13 | 活动状态机 | EDIT→ARRAIGNMENT→PASS→DOING→CLOSE；定时任务自动启停 |
+| BR-14 | 抽奖次数账户 | 总/日/月次数独立限制，扣减防超 |
+| BR-15 | 拼团防重 | biz_id（activityId_userId_count）唯一；同用户同活动不可重复参团 |
+| BR-16 | 拼团超时 | 队伍有效期内未成团自动退款（未支付退单/已支付未成团退单/已成团退单三策略） |
+| BR-17 | 发奖补偿 | 发奖消息失败由 XXL-Job 重发（mq_state 扫描），最终必达 |
+
+### 10.5 积分与券
+
+| 编号 | 规则 | 说明 |
+|------|------|------|
+| BR-18 | 积分防透支 | 原子 UPDATE 条件 `available_amount + amount >= 0` |
+| BR-19 | 积分交易防重 | out_biz_no 唯一索引 |
+| BR-20 | 券状态流转 | UNUSED → LOCKED（下单）→ USED（支付成功）/ 退回 UNUSED（取消）→ REFUNDED（退款可再用）→ EXPIRED（过期） |
+| BR-21 | 券限领 | 每人限领 + 发行余量校验 |
+| BR-22 | 签到防重 | 同一用户同一天仅可签到一次 |
+
+### 10.6 售后
+
+| 编号 | 规则 | 说明 |
+|------|------|------|
+| BR-23 | 售后状态机 | 待审核→审核通过(待寄回)→寄回中→待收货→已完成 / 拒绝 / 取消 |
+| BR-24 | 仅退款 | 审核通过自动原路退款 + 退券 + 退积分 |
+| BR-25 | 退货退款 | 用户寄回 → 商家确认收货 → 退款 + 退券 + 退积分 |
+| BR-26 | 逆向一致性 | 退款/退券/退积分通过本地消息表 + MQ 最终一致 |
+
+### 10.7 风控
+
+| 编号 | 规则 | 说明 |
+|------|------|------|
+| BR-27 | 限流 | 用户级 1 req/s，超限 429；登录轮询同 ticket 每 2 秒 1 次 |
+| BR-28 | 自动拉黑 | 24h 内触发限流 ≥ 5 次自动拉黑 |
+| BR-29 | 熔断降级 | Sentinel 150ms 熔断、10s 半开；DCC 开关动态降级 |
+
+---
+
+## 11. 数据字典（核心表字段速查）
+
+> 完整 DDL 见《设计文档-SDS》§7；此处列出核心表关键字段含义，供测试与联调对照。
+
+### 11.1 order（订单，分库分表）
+
+| 字段 | 类型 | 含义 |
+|------|------|------|
+| order_id | VARCHAR(32) | 订单ID（雪花） |
+| order_type | VARCHAR(16) | NORMAL普通 / GROUP_BUY拼团 / CREDIT积分兑换 |
+| activity_id | VARCHAR(32) | 关联营销活动ID（可空） |
+| team_id | VARCHAR(32) | 关联拼团队伍ID（可空） |
+| total_amount | DECIMAL(10,2) | 订单总金额 |
+| discount_amount | DECIMAL(10,2) | 优惠金额（券+积分抵扣合计） |
+| pay_amount | DECIMAL(10,2) | 实付金额 |
+| pay_channel | VARCHAR(16) | ALIPAY / WXPAY |
+| status | VARCHAR(16) | CREATE/PAY_WAIT/PAY_SUCCESS/DEAL_DONE/CLOSE/REFUND |
+
+### 11.2 marketing_activity（营销活动，公共库）
+
+| 字段 | 类型 | 含义 |
+|------|------|------|
+| activity_id | VARCHAR(32) | 活动ID |
+| activity_type | VARCHAR(16) | LOTTERY抽奖 / GROUP_BUY拼团 / FLASH_SALE秒杀 |
+| strategy_id | VARCHAR(32) | 关联抽奖策略ID |
+| discount_id | VARCHAR(32) | 关联拼团折扣ID |
+| begin_time / end_time | DATETIME | 活动起止时间 |
+| status | VARCHAR(16) | EDIT/ARRAIGNMENT/PASS/DOING/CLOSE/REFUSE |
+| tag_id / tag_scope | VARCHAR | 人群标签与范围(VISIBLE/PARTICIPATE) |
+
+### 11.3 strategy_award（奖品概率配置，公共库）
+
+| 字段 | 类型 | 含义 |
+|------|------|------|
+| strategy_id | VARCHAR(32) | 策略ID |
+| award_id | VARCHAR(32) | 奖品ID |
+| award_rate | DECIMAL(6,4) | 中奖概率（如 0.2000=20%） |
+| award_count | INT | 奖品总量 |
+| award_surplus_count | INT | 奖品剩余量（扣减条件 >0） |
+
+### 11.4 group_buy_team（拼团队伍，公共库）
+
+| 字段 | 类型 | 含义 |
+|------|------|------|
+| team_id | VARCHAR(32) | 拼团ID |
+| target_count | INT | 成团目标人数 |
+| complete_count | INT | 已支付完成人数 |
+| lock_count | INT | 已锁单人数 |
+| status | TINYINT | 0拼团中/1已成团/2已失败/3含退单 |
+| valid_time / expire_time | INT/DATETIME | 有效时长(分钟) / 过期时间 |
+
+### 11.5 user_credit_account（积分账户，分库分表）
+
+| 字段 | 类型 | 含义 |
+|------|------|------|
+| total_amount | DECIMAL(12,2) | 累计获得积分 |
+| available_amount | DECIMAL(12,2) | 可用积分（扣减校验 >=0） |
+| freeze_amount | DECIMAL(12,2) | 冻结积分（下单抵扣冻结） |
+
+### 11.6 user_coupon（用户券，分库分表）
+
+| 字段 | 类型 | 含义 |
+|------|------|------|
+| template_id | VARCHAR(32) | 券模板ID |
+| status | VARCHAR(16) | UNUSED/LOCKED/USED/EXPIRED/REFUNDED |
+| order_id | VARCHAR(32) | 锁定/使用时关联订单 |
+| expire_time | DATETIME | 过期时间（定时任务扫描） |
+| source | VARCHAR(64) | 来源（活动/签到/手动） |
+
+---
+
 *需求文档 v1.0 — 2026-08-10，源自《PRD-统一商城前台 v2.0》*
