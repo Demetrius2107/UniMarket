@@ -24,6 +24,9 @@ public enum ErrorCode implements Serializable {
     STOCK_NOT_ENOUGH(10001, "库存不足"),
     PRODUCT_OFF_SHELF(10002, "商品已下架"),
     ACTIVITY_NOT_AVAILABLE(10003, "活动未开始或已结束"),
+    PRODUCT_NOT_FOUND(10004, "商品不存在"),
+    SKU_NOT_FOUND(10005, "SKU不存在"),
+    SKU_DISABLED(10015, "SKU已禁用"),
 
     // ---------- 优惠券 ----------
     COUPON_UNAVAILABLE(10006, "优惠券不可用或已过期"),
