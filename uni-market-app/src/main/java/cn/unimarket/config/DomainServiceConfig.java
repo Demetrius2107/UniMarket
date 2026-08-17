@@ -4,6 +4,10 @@ import cn.unimarket.domain.order.repository.OrderRepository;
 import cn.unimarket.domain.order.service.IdGenerator;
 import cn.unimarket.domain.order.service.InventoryGateway;
 import cn.unimarket.domain.order.service.OrderService;
+import cn.unimarket.domain.product.repository.ProductRepository;
+import cn.unimarket.domain.product.repository.SkuRepository;
+import cn.unimarket.domain.product.service.ProductService;
+import cn.unimarket.domain.product.service.SkuStockService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -20,5 +24,15 @@ public class DomainServiceConfig {
                                      InventoryGateway inventoryGateway,
                                      IdGenerator idGenerator) {
         return new OrderService(orderRepository, inventoryGateway, idGenerator);
+    }
+
+    @Bean
+    public ProductService productService(ProductRepository productRepository) {
+        return new ProductService(productRepository);
+    }
+
+    @Bean
+    public SkuStockService skuStockService(SkuRepository skuRepository) {
+        return new SkuStockService(skuRepository);
     }
 }
