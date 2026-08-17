@@ -23,5 +23,11 @@
             <groupId>cn.unimarket</groupId>
             <artifactId>uni-market-types</artifactId>
         </dependency>
+
+        <!-- 领域服务日志：仅 slf4j 门面，不引入 Spring，保持领域层纯净 -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
     </dependencies>
 </project>

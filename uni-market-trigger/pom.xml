@@ -34,6 +34,12 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- 应用层 @Transactional 事务支持（spring-tx + DataSource 装配） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+
         <!-- Phase 1 接口文档：Knife4j OpenAPI3（jakarta 版） -->
         <dependency>
             <groupId>com.github.xiaoymin</groupId>

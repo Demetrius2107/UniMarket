@@ -1,0 +1,58 @@
+server:
+  port: 8091
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: uni-market
+  profiles:
+    active: dev
+
+  # Jackson：BigDecimal 序列化为字符串防精度丢失（BR-03）；时间统一格式
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    generator:
+      write-bigdecimal-as-plain: true
+
+  # 事务管理器（Spring 自动装配 DataSourceTransactionManager）
+  transaction:
+    rollback-on-commit-failure: true
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    db-config:
+      id-type: AUTO
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+logging:
+  level:
+    root: INFO
+    cn.unimarket: DEBUG
+    org.springframework.web: INFO
+
+# 健康检查端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+# Knife4j / OpenAPI3
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn

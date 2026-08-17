@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="uni-market-infrastructure" />
+        <module name="uni-market-domain" />
+        <module name="uni-market-app" />
+        <module name="uni-market-api" />
+        <module name="uni-market-trigger" />
+        <module name="uni-market-types" />
+      </profile>
+    </annotationProcessing>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="uni-market-api" options="-parameters" />
+      <module name="uni-market-app" options="-parameters" />
+      <module name="uni-market-domain" options="-parameters" />
+      <module name="uni-market-infrastructure" options="-parameters" />
+      <module name="uni-market-trigger" options="-parameters" />
+      <module name="uni-market-types" options="-parameters" />
+    </option>
+  </component>
+</project>
